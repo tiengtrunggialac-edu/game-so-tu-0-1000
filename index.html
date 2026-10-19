@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lắc đầu chọn đáp án – Số tiếng Trung</title>
+<style>
+:root{--navy:#17324d;--blue:#2688d8;--coral:#f05b4d;--mint:#5bc99a;--gold:#ffd65a}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Segoe UI",sans-serif;color:var(--navy);background:linear-gradient(135deg,#e0f7ff,#fff4d5);min-height:100vh}
+header{text-align:center;padding:20px 12px 8px}h1{font-size:clamp(1.5rem,4vw,2.5rem);margin:0;color:#e94f40}header p{margin:7px auto;max-width:780px}
+main{max-width:1120px;margin:auto;padding:12px 16px 28px}.panel{background:#ffffffed;border:3px solid #fff;border-radius:22px;padding:16px;box-shadow:0 8px 25px #17324d15;margin-bottom:14px}
+.controls{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}button,select{font:inherit;border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:var(--coral);color:white}.secondary{background:#e7f3ff;color:#17466c}.green{background:var(--mint);color:#073f2d}.yellow{background:var(--gold);color:#584100}.layout{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(360px,1.15fr);gap:14px}.cameraWrap{position:relative;overflow:hidden;border-radius:16px;background:#15283b;min-height:260px;display:flex;align-items:center;justify-content:center;color:white}video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;transform:scaleX(-1)}canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.camPlaceholder{padding:24px;text-align:center;z-index:1}.camStatus{font-weight:800;margin-top:10px}.tiny{font-size:.88rem;color:#557084;line-height:1.5}.number{font-size:clamp(3.5rem,9vw,6rem);font-weight:950;color:#1976ba;text-align:center;line-height:1.1;margin:12px 0}.prompt{text-align:center;font-weight:750}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px auto 0;max-width:620px}.answer{min-height:74px;font-size:clamp(1rem,2vw,1.3rem);background:#edf7ff;border:3px solid #d5eafa;color:#17324d;position:relative}.answer.selected{border-color:#f3a52c;background:#fff0b8;box-shadow:0 0 0 3px #f3a52c30;transform:scale(1.025)}.answer.correct{background:#c6f5da;border-color:#2eae70}.answer.wrong{background:#ffd4d4;border-color:#e75c5c}.tag{display:inline-block;border-radius:999px;background:#eaf5ff;padding:7px 12px;font-weight:800}.feedback{text-align:center;min-height:32px;margin-top:12px;font-weight:850}.stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}.stat{background:#f1f8ff;border-radius:12px;padding:8px 13px;font-weight:800}.stat b{color:#e94f40}.meter{height:9px;background:#e7edf2;border-radius:20px;overflow:hidden;margin-top:12px}.meter div{height:100%;width:0;background:linear-gradient(90deg,#49c68e,#ffdb60);transition:width .2s}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.how div{background:#f4f9ff;border-radius:13px;padding:12px;text-align:center}.how b{display:block;margin-bottom:4px}.muted{color:#587187}.hidden{display:none!important}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.cameraWrap{min-height:240px}.how{grid-template-columns:1fr}.panel{padding:12px}}
+</style>
+</head>
+<body>
+<header><h1>🐼 LẮC ĐẦU CHỌN ĐÚNG – SỐ TIẾNG TRUNG</h1><p>Nhìn vào camera, nghiêng đầu trái/phải để chọn đáp án; gật đầu để xác nhận! Không cần dùng chuột khi đang chơi.</p></header>
+<main>
+<section class="panel">
+ <div class="controls">
+  <label class="tag">Mức độ
+   <select id="level"><option value="unit">Đơn vị (0–10)</option><option value="tens">Hàng chục (10–99)</option><option value="hundreds" selected>Hàng trăm (100–999)</option><option value="thousands">Đến 1000</option><option value="mixed">Trộn 0–1000</option></select>
+  </label>
+  <button class="primary" id="cameraBtn">📷 Bật camera & nhận diện đầu</button>
+  <button class="green" id="startBtn">🎮 Bắt đầu chơi</button>
+  <button class="secondary" id="resetBtn">↻ Chơi lại</button>
+ </div>
+ <p class="tiny" style="text-align:center">Lần đầu cần cho phép trình duyệt truy cập camera. Camera thường hoạt động trên HTTPS hoặc khi mở file trực tiếp trên máy tính. Nhận diện đầu cần kết nối Internet để tải mô hình.</p>
+</section>
+<div class="layout">
+ <section class="panel">
+  <h2 style="margin-top:0">📹 Camera của người chơi</h2>
+  <div class="cameraWrap" id="cameraWrap">
+   <video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas>
+   <div class="camPlaceholder" id="placeholder"><div style="font-size:3rem">🙂</div><b>Camera chưa bật</b><p class="tiny" style="color:#dceeff">Bật camera để bắt đầu điều khiển bằng đầu.</p></div>
+  </div>
+  <div class="camStatus" id="camStatus">Trạng thái: chưa bật camera</div>
+  <p class="tiny">Điều khiển: <b>nghiêng trái</b> chọn đáp án A, <b>nghiêng phải</b> chọn đáp án B; <b>gật đầu</b> để xác nhận. Nếu nhận diện đầu không hoạt động, cô vẫn có thể bấm đáp án bằng chuột.</p>
+  <div class="stats"><div class="stat">⭐ Điểm: <b id="score">0</b></div><div class="stat">🔥 Đúng liên tiếp: <b id="streak">0</b></div><div class="stat">Câu: <b id="round">0</b></div></div>
+  <div class="meter"><div id="progress"></div></div>
+ </section>
+ <section class="panel">
+  <div class="tag" id="statusTag">Sẵn sàng?</div>
+  <div class="prompt">Số này đọc thế nào trong tiếng Trung?</div>
+  <div class="number" id="number">—</div>
+  <div class="answers" id="answers">
+   <button class="answer" disabled>Đáp án A</button><button class="answer" disabled>Đáp án B</button>
+  </div>
+  <div class="feedback" id="feedback" aria-live="polite">Bấm “Bắt đầu chơi” để nhận câu hỏi.</div>
+  <div class="controls"><button class="yellow" id="confirmBtn" disabled>👌 Xác nhận đáp án</button><button class="primary" id="nextBtn" disabled>Câu tiếp theo →</button></div>
+  <p class="tiny" style="text-align:center">Đáp án hiển thị bằng Pinyin có dấu thanh. Khi chọn đúng, cô có thể yêu cầu học sinh đọc to lại trước khi sang câu mới.</p>
+ </section>
+</div>
+<section class="panel">
+ <h3 style="margin-top:0">🕹️ Cách chơi bằng đầu</h3>
+ <div class="how"><div><b>⬅️ Nghiêng trái</b><span class="muted">Chọn đáp án ở bên trái</span></div><div><b>➡️ Nghiêng phải</b><span class="muted">Chọn đáp án ở bên phải</span></div><div><b>⬇️ Gật đầu</b><span class="muted">Xác nhận đáp án đang sáng</span></div></div>
+ <p class="tiny">Mẹo: giữ đầu thẳng ở giữa trong chốc lát để bộ nhận diện lấy tư thế chuẩn; sau đó nghiêng đầu nhẹ nhàng. Không cần lắc mạnh.</p>
+</section>
+</main>
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const $=id=>document.getElementById(id);
+const video=$('video'),canvas=$('overlay'),ctx=canvas.getContext('2d');
+let stream=null,landmarker=null,raf=0,baselineYaw=null,baselinePitch=null,lastYaw=0,lastPitch=0,selected=0,started=false,answered=false,score=0,streak=0,round=0,current=0,correctAnswer='',optionValues=[],gameFinished=false;
+let lastMove=0,lastNod=0,nodArmed=true,faceFound=false;
+const han=['líng','yī','èr','sān','sì','wǔ','liù','qī','bā','jiǔ'];
+function pinyin(n){
+ if(n===0)return 'líng'; if(n===1000)return 'yì qiān';
+ let s='';
+ if(n>=100){let h=Math.floor(n/100);s+=(h===1?'yī':han[h])+' bǎi';n%=100;if(n>0&&n<10)s+=' líng'}
+ if(n>=10){let t=Math.floor(n/10);s+=(t===1&&s===''?'':han[t]+' ')+'shí';n%=10}
+ if(n>0)s+=(s?' ':'')+han[n];
+ return s;
+}
+function randNum(){let min=0,max=1000;switch($('level').value){case'unit':max=10;break;case'tens':min=10;max=99;break;case'hundreds':min=100;max=999;break;case'thousands':min=100;max=1000;break;}return Math.floor(Math.random()*(max-min+1))+min}
+function setStatus(t){$('statusTag').textContent=t}
+function drawOptions(){
+ const set=new Set([pinyin(current)]);while(set.size<2)set.add(pinyin(randNum()));
+ optionValues=[...set].sort(()=>Math.random()-.5);correctAnswer=pinyin(current);selected=0;
+ $('answers').innerHTML='';
+ optionValues.forEach((a,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=String.fromCharCode(65+i)+'. '+a;b.onclick=()=>{if(!answered&&started){selected=i;paintSelection();}};$('answers').appendChild(b)});
+ paintSelection();
+}
+function paintSelection(){[...$('answers').children].forEach((b,i)=>b.classList.toggle('selected',i===selected));}
+function question(){if(gameFinished)return;current=randNum();answered=false;$('number').textContent=current.toLocaleString('vi-VN');$('feedback').textContent='Nghiêng trái chọn A, nghiêng phải chọn B; gật đầu để xác nhận.';$('confirmBtn').disabled=false;$('nextBtn').disabled=true;setStatus('Đang chơi');drawOptions();}
+function confirm(){if(!started||answered||!optionValues.length)return;answered=true;const ok=optionValues[selected]===correctAnswer;[...$('answers').children].forEach((b,i)=>{b.disabled=true;if(optionValues[i]===correctAnswer)b.classList.add('correct');else if(i===selected)b.classList.add('wrong')});if(ok){score+=10;streak++;$('feedback').textContent='🎉 Chính xác! '+current+' đọc là '+correctAnswer+'.';setStatus('Chính xác!')}else{streak=0;$('feedback').textContent='💡 Đáp án đúng là '+correctAnswer+'. Hãy đọc lại một lần nhé!';setStatus('Thử lại câu sau nhé')}$('score').textContent=score;$('streak').textContent=streak;$('round').textContent=round+1;$('progress').style.width=Math.min(100,round/10*100)+'%';$('confirmBtn').disabled=true;$('nextBtn').disabled=false;}
+function next(){if(!answered)return;round++;if(round>=10){gameFinished=true;started=false;setStatus('🏆 Hoàn thành!');$('feedback').textContent='Con đã hoàn thành 10 câu và đạt '+score+' điểm! Bấm “Chơi lại” để thử lần nữa.';$('nextBtn').disabled=true;$('confirmBtn').disabled=true;return}question();$('round').textContent=round+1;}
+$('startBtn').onclick=()=>{started=true;gameFinished=false;score=0;streak=0;round=0;$('score').textContent='0';$('streak').textContent='0';$('round').textContent='1';$('progress').style.width='0';question();};
+$('confirmBtn').onclick=confirm;$('nextBtn').onclick=next;
+$('resetBtn').onclick=()=>{started=false;answered=false;gameFinished=false;score=streak=round=0;selected=0;$('score').textContent='0';$('streak').textContent='0';$('round').textContent='0';$('number').textContent='—';$('answers').innerHTML='<button class="answer" disabled>Đáp án A</button><button class="answer" disabled>Đáp án B</button>';$('feedback').textContent='Bấm “Bắt đầu chơi” để nhận câu hỏi.';$('confirmBtn').disabled=true;$('nextBtn').disabled=true;setStatus('Sẵn sàng?');$('progress').style.width='0';};
+async function enableCamera(){
+ try{
+  $('camStatus').textContent='Đang bật camera và tải mô hình nhận diện…';
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+  video.srcObject=stream;await video.play();$('placeholder').classList.add('hidden');
+  const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  landmarker=await FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numFaces:1,outputFaceBlendshapes:false});
+  $('camStatus').textContent='✅ Camera đã bật – hãy nhìn thẳng để căn chỉnh đầu.';baselineYaw=null;baselinePitch=null;loop();
+ }catch(e){$('camStatus').textContent='Không bật được camera/nhận diện: '+(e.message||e)+'. Kiểm tra quyền camera và kết nối Internet.'}
+}
+function loop(){
+ if(!landmarker||video.readyState<2){raf=requestAnimationFrame(loop);return}
+ const w=video.videoWidth,h=video.videoHeight;if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
+ ctx.clearRect(0,0,w,h);
+ try{
+  const res=landmarker.detectForVideo(video,performance.now());const pts=res.faceLandmarks?.[0];
+  if(pts){
+   faceFound=true;
+   // Use nose position relative to eye corners; stable enough for gentle left/right and nod gestures.
+   const nose=pts[1],leftEye=pts[33],rightEye=pts[263],forehead=pts[10],chin=pts[152];
+   const eyeMid=(leftEye.x+rightEye.x)/2, eyeDist=Math.max(.001,Math.abs(rightEye.x-leftEye.x));
+   const yaw=(nose.x-eyeMid)/eyeDist;
+   const pitch=(nose.y-(forehead.y+chin.y)/2)/Math.max(.001,chin.y-forehead.y);
+   if(baselineYaw===null){baselineYaw=yaw;baselinePitch=pitch}
+   lastYaw=lastYaw*.7+yaw*.3;lastPitch=lastPitch*.7+pitch*.3;
+   ctx.fillStyle='#ffdb59';ctx.beginPath();ctx.arc(nose.x*w,nose.y*h,8,0,Math.PI*2);ctx.fill();
+   const now=performance.now();
+   if(started&&!answered&&now-lastMove>850){
+    // Four answers in two columns: left/right head tilt switches between columns; vertical position chooses row.
+    if(lastYaw-baselineYaw < -0.16){selected=(selected%2===1)?selected-1:selected;lastMove=now;paintSelection();}
+    else if(lastYaw-baselineYaw > 0.16){selected=(selected%2===0)?selected+1:selected;lastMove=now;paintSelection();}
+    else if(lastPitch-baselinePitch > 0.055 && nodArmed && now-lastNod>1200){confirm();lastNod=now;nodArmed=false}
+    if(Math.abs(lastPitch-baselinePitch)<0.025)nodArmed=true;
+   }
+   $('camStatus').textContent='✅ Đã thấy khuôn mặt · '+(started?'Nghiêng trái/phải để chọn, gật đầu để xác nhận':'Bấm bắt đầu để chơi');
+  }else{$('camStatus').textContent='Đang tìm khuôn mặt… hãy nhìn vào camera.';faceFound=false}
+ }catch(e){}
+ raf=requestAnimationFrame(loop);
+}
+$('cameraBtn').onclick=enableCamera;
+window.addEventListener('beforeunload',()=>{if(stream)stream.getTracks().forEach(t=>t.stop());if(raf)cancelAnimationFrame(raf)});
+</script>
+</body>
+</html>
